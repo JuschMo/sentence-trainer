@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delayed Copying</title>
+  <style>
+    :root{
+      --bg:#0f172a;        /* slate-900 */
+      --fg:#e2e8f0;        /* slate-200 */
+      --muted:#94a3b8;     /* slate-400 */
+      --accent:#22d3ee;    /* cyan-400 */
+      --good:#34d399;      /* emerald-400 */
+      --warn:#fbbf24;      /* amber-400 */
+      --danger:#fb7185;    /* rose-400 */
+      --card:#111827;      /* gray-900 */
+      --btn:#1f2937;       /* gray-800 */
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% -20%, #1e293b, transparent), var(--bg);
+      color:var(--fg); display:grid; place-items:center;
+    }
+    .app{ width: min(1100px, 92vw); }
+    .card{ background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.08);
+           border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    h1{ margin:0 0 12px; font-weight:800; letter-spacing:0.2px; }
+    p.muted{ color:var(--muted); margin-top:6px }
+    textarea{ width:100%; min-height:260px; border-radius:12px; background:#0b1220; color:var(--fg); border:1px solid rgba(255,255,255,0.12);
+              padding:14px; font-size:18px; line-height:1.5; resize:vertical; }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .btn{ background:var(--btn); color:#fff; border:1px solid rgba(255,255,255,0.14); padding:12px 16px; border-radius:12px; font-size:16px;
+          cursor:pointer; transition: transform .06s ease, background .2s ease, border-color .2s ease; }
+    .btn:hover{ transform:translateY(-1px); border-color:rgba(255,255,255,0.25) }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none }
+    .btn.primary{ background: linear-gradient(180deg, #22d3ee, #06b6d4); color:#00212a; font-weight:700; border:none }
+    .btn.ghost{ background:transparent; border:1px dashed rgba(255,255,255,0.25) }
+    .chips{ display:flex; gap:10px; flex-wrap:wrap; margin:.5rem 0 0 }
+    .chip{ background:#0b1220; padding:6px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; font-size:12px; color:var(--muted) }
+
+    /* Viewer */
+    .viewer{ display:none }
+    .hud{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px }
+    .count{ font-variant-numeric:tabular-nums; letter-spacing:1px; font-weight:800; }
+    .count.badge{ background:#0b1220; border:1px solid rgba(255,255,255,0.12); padding:8px 12px; border-radius:999px }
+    .count.show{ color:var(--good) }
+    .count.blank{ color:var(--warn) }
+    .count.idle{ color:var(--muted) }
+    .progress{ height:6px; background:#0b1220; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.08) }
+    .progress > div{ height:100%; width:0%; background: linear-gradient(90deg, #22d3ee, #34d399); transition: width .1s linear }
+
+    .sentence{ font-size: clamp(28px, 5vw, 54px); line-height:1.2; text-align:center; min-height: 6lh; display:grid; place-items:center; padding: 28px; border-radius:18px; border:1px solid rgba(255,255,255,.08);
+               background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
+    .write{ font-weight:900; letter-spacing: 2px; font-size: clamp(34px, 6vw, 72px); color:var(--accent); text-align:center }
+
+    .footer{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:12px; flex-wrap:wrap }
+    .index{ color:var(--muted) }
+    .kbd{ font-variant-numeric: tabular-nums; background:#0b1220; border:1px solid rgba(255,255,255,.15); padding:2px 6px; border-radius:6px }
+
+    @media (max-width:600px){ .sentence{ min-height: 5lh } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Setup screen -->
+    <section id="setup" class="card">
+      <h1>Sentence Trainer</h1>
+      <p class="muted">Paste or type one sentence per line. Click <strong>OK</strong> to start. On each slide: the sentence shows for <strong>5s</strong> with a countdown, hides for <strong>3s</strong> (countdown), then shows <em>Write</em>. Use <span class="kbd">Space</span> or the <strong>Next</strong> button to proceed.</p>
+      <textarea id="input" placeholder="Type one sentence per line…&#10;Ich spiele gern Fußball.&#10;Am Wochenende besuche ich meine Großeltern.&#10;…"></textarea>
+      <div class="row" style="margin-top:12px">
+        <button id="startBtn" class="btn primary">OK</button>
+        <button id="demoBtn" class="btn">Load demo</button>
+        <button id="clearBtn" class="btn ghost">Clear</button>
+        <div class="chips" aria-hidden="true">
+          <span class="chip">5s show</span>
+          <span class="chip">3s blank</span>
+          <span class="chip">then <strong>Write</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Viewer screen -->
+    <section id="viewer" class="viewer">
+      <div class="hud">
+        <div class="index" id="indexLabel">Sentence 1 / 1</div>
+        <div class="count badge idle" id="countdown">Ready</div>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="bar"></div></div>
+
+      <div id="stage" class="sentence" role="region" aria-live="polite"></div>
+
+      <div class="footer">
+        <div class="row">
+          <button id="nextBtn" class="btn" disabled>Next ▸</button>
+          <button id="restartBtn" class="btn">↻ Restart</button>
+          <button id="backBtn" class="btn">◂ Back to input</button>
+        </div>
+        <div class="muted">Tip: press <span class="kbd">Space</span> for Next</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Simple single-file SPA
+    const setup = document.getElementById('setup');
+    const viewer = document.getElementById('viewer');
+    const input = document.getElementById('input');
+    const startBtn = document.getElementById('startBtn');
+    const demoBtn = document.getElementById('demoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    const indexLabel = document.getElementById('indexLabel');
+    const stage = document.getElementById('stage');
+    const countdown = document.getElementById('countdown');
+    const bar = document.getElementById('bar');
+    const nextBtn = document.getElementById('nextBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    let sentences = [];
+    let i = 0;                 // current sentence index
+    let phase = 'idle';        // 'show'|'blank'|'write'|'again'|'idle'
+    let timer = null;          // interval id
+    let t0 = 0, dur = 0;       // timing
+
+    function parseSentences(text){
+      return text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    }
+
+    function gotoViewer(list){
+      sentences = list;
+      i = 0;
+      setup.style.display = 'none';
+      viewer.style.display = 'block';
+      startSentenceCycle();
+    }
+
+    function updateIndex(){
+      indexLabel.textContent = `Sentence ${i+1} / ${sentences.length}`;
+    }
+
+    function setCountdownLabel(txt, cls){
+      countdown.textContent = txt;
+      countdown.className = `count badge ${cls}`;
+    }
+
+    function animateBar(progress){
+      bar.style.width = `${Math.max(0, Math.min(100, progress*100))}%`;
+    }
+
+    function startTimer(ms, tickLabel, cls, onDone){
+      clearInterval(timer);
+      t0 = performance.now();
+      dur = ms;
+      animateBar(0);
+      timer = setInterval(()=>{
+        const now = performance.now();
+        const elapsed = now - t0;
+        const remain = Math.max(0, ms - elapsed);
+        const s = Math.ceil(remain/1000);
+        setCountdownLabel(`${tickLabel}: ${s}s`, cls);
+        animateBar(elapsed / ms);
+        if(remain <= 0){
+          clearInterval(timer);
+          animateBar(1);
+          onDone && onDone();
+        }
+      }, 100);
+    }
+
+    function startSentenceCycle(){
+      if(i>=sentences.length){
+        // Finished all
+        stage.innerHTML = `<div class="write">All done ✅</div>`;
+        setCountdownLabel('Complete', 'idle');
+        nextBtn.disabled = true;
+        animateBar(0);
+        return;
+      }
+      updateIndex();
+      phase = 'show';
+      stage.textContent = sentences[i];
+      nextBtn.disabled = true; // only enabled in 'write' and 'again'
+      startTimer(5000, 'Show', 'show', ()=>{
+        phase = 'blank';
+        stage.textContent = '';
+        startTimer(3000, 'Blank', 'blank', ()=>{
+          phase = 'write';
+          stage.innerHTML = `<div class="write">WRITE</div>`;
+          setCountdownLabel('Wait for Next', 'idle');
+          animateBar(0);
+          nextBtn.disabled = false; // allow progressing
+        });
+      });
+    }
+
+    function handleNext(){
+      if(phase === 'write'){
+        // Show the same sentence again (no timer)
+        phase = 'again';
+        stage.textContent = sentences[i];
+        setCountdownLabel('Repeat shown', 'idle');
+        animateBar(0);
+        // Keep Next enabled to go to the next sentence on next click
+        nextBtn.disabled = false;
+      } else if(phase === 'again'){
+        // Move to next sentence
+        i++;
+        startSentenceCycle();
+      } else if(phase === 'idle' && i<sentences.length){
+        // Safety: restart cycle for current sentence
+        startSentenceCycle();
+      }
+    }
+
+    // Controls
+    startBtn.addEventListener('click', ()=>{
+      const list = parseSentences(input.value);
+      if(list.length===0){
+        alert('Please add at least one sentence.');
+        return;
+      }
+      // Persist to localStorage for convenience
+      try{ localStorage.setItem('sentence-trainer:last', JSON.stringify(list)); }catch(e){}
+      gotoViewer(list);
+    });
+
+    demoBtn.addEventListener('click', ()=>{
+      const demo = [
+        'Ich mag Mathe, weil es logisch ist.',
+        'Am Montag habe ich Deutsch.',
+        'Wir spielen Fußball nach der Schule.',
+        'Im Sommer fahre ich nach Spanien.'
+      ];
+      input.value = demo.join('\n');
+    });
+
+    clearBtn.addEventListener('click', ()=>{ input.value=''; input.focus(); });
+
+    nextBtn.addEventListener('click', handleNext);
+
+    restartBtn.addEventListener('click', ()=>{
+      clearInterval(timer);
+      startSentenceCycle();
+    });
+
+    backBtn.addEventListener('click', ()=>{
+      clearInterval(timer);
+      viewer.style.display='none'; setup.style.display='block';
+      nextBtn.disabled = true; stage.textContent=''; animateBar(0);
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      // Space for Next (but not when typing in textarea)
+      if(e.code === 'Space'){
+        const active = document.activeElement;
+        if(active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) return; 
+        e.preventDefault();
+        if(viewer.style.display === 'block' && !nextBtn.disabled){ handleNext(); }
+      }
+    });
+
+    // Load last session if available
+    try{
+      const last = JSON.parse(localStorage.getItem('sentence-trainer:last')||'null');
+      if(Array.isArray(last) && last.length){ input.value = last.join('\n'); }
+    }catch(e){}
+  </script>
+</body>
+</html>
