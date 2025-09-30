@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Delayed Copying</title>
+  <title>Sentence Trainer</title>
   <style>
     :root{
       --bg:#0f172a;        /* slate-900 */
@@ -78,13 +78,31 @@
           <span class="chip">then <strong>Write</strong></span>
         </div>
       </div>
+
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin:0 0 8px;font-size:18px">Text‑to‑Speech (optional)</h2>
+        <p class="muted" id="ttsSupportNote">Enable this to have each sentence read aloud during the <em>Show</em> phase and when it reappears.</p>
+        <div class="row" id="ttsControls">
+          <label class="row" style="gap:8px;align-items:center">
+            <input type="checkbox" id="ttsEnabled"/>
+            <span>Read sentences aloud</span>
+          </label>
+          <select id="voiceSelect" title="Voice" disabled></select>
+          <label>Rate <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1" disabled></label>
+          <label>Pitch <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1" disabled></label>
+          <button id="testVoice" class="btn" disabled>Test voice</button>
+        </div>
+      </div>
     </section>
 
     <!-- Viewer screen -->
     <section id="viewer" class="viewer">
       <div class="hud">
         <div class="index" id="indexLabel">Sentence 1 / 1</div>
-        <div class="count badge idle" id="countdown">Ready</div>
+        <div class="row" style="margin-left:auto;gap:8px;align-items:center">
+          <button id="muteBtn" class="btn" title="Mute / unmute TTS">🔊</button>
+          <div class="count badge idle" id="countdown">Ready</div>
+        </div>
       </div>
       <div class="progress" aria-hidden="true"><div id="bar"></div></div>
 
@@ -117,6 +135,7 @@
     const nextBtn = document.getElementById('nextBtn');
     const restartBtn = document.getElementById('restartBtn');
     const backBtn = document.getElementById('backBtn');
+    const muteBtn = document.getElementById('muteBtn');
 
     let sentences = [];
     let i = 0;                 // current sentence index
@@ -124,8 +143,20 @@
     let timer = null;          // interval id
     let t0 = 0, dur = 0;       // timing
 
+    // === TTS state ===
+    const ttsEnabled = document.getElementById('ttsEnabled');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rateInput = document.getElementById('rate');
+    const pitchInput = document.getElementById('pitch');
+    const testVoiceBtn = document.getElementById('testVoice');
+    const tts = { enabled:false, muted:false, voice:null, rate:1, pitch:1, volume:1 };
+
     function parseSentences(text){
-      return text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      // Robustly split on Windows (\r\n), Unix (\n), or classic Mac (\r) newlines
+      return text
+        .split(/\r?\n|\r/)
+        .map(s => s.trim())
+        .filter(Boolean);
     }
 
     function gotoViewer(list){
@@ -169,6 +200,62 @@
       }, 100);
     }
 
+    // ---------- TTS helpers ----------
+    function loadVoices(){
+      if(!('speechSynthesis' in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '';
+      for(const v of voices){
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = `${v.name} (${v.lang})`;
+        voiceSelect.appendChild(opt);
+      }
+      const savedName = localStorage.getItem('sentence-trainer:voice');
+      if(savedName){
+        const found = Array.from(voiceSelect.options).find(o=>o.value===savedName);
+        if(found){ voiceSelect.value = savedName; tts.voice = voices.find(v=>v.name===savedName)||null; }
+      } else if(voices.length){
+        const preferred = voices.find(v=>/^en|^de/i.test(v.lang)) || voices[0];
+        tts.voice = preferred; voiceSelect.value = preferred?.name || '';
+      }
+    }
+
+    function setTTSControlsEnabled(on){
+      voiceSelect.disabled = !on; rateInput.disabled = !on; pitchInput.disabled = !on; testVoiceBtn.disabled = !on; muteBtn.disabled = !on;
+    }
+
+    function speak(text){
+      if(!tts.enabled || tts.muted || !('speechSynthesis' in window)) return;
+      try{ window.speechSynthesis.cancel(); }catch(e){}
+      const u = new SpeechSynthesisUtterance(text);
+      if(tts.voice) u.voice = tts.voice;
+      u.rate = tts.rate; u.pitch = tts.pitch; u.volume = tts.volume;
+      window.speechSynthesis.speak(u);
+    }
+
+    function stopSpeak(){ if('speechSynthesis' in window) try{ window.speechSynthesis.cancel(); }catch(e){} }
+
+    // Restore TTS settings on load
+    (function initTTS(){
+      try{
+        tts.enabled = localStorage.getItem('sentence-trainer:tts') === '1';
+        tts.rate = parseFloat(localStorage.getItem('sentence-trainer:rate')||'1')||1;
+        tts.pitch = parseFloat(localStorage.getItem('sentence-trainer:pitch')||'1')||1;
+        tts.muted = localStorage.getItem('sentence-trainer:muted') === '1';
+        ttsEnabled.checked = tts.enabled; rateInput.value = tts.rate; pitchInput.value = tts.pitch;
+        setTTSControlsEnabled(tts.enabled);
+        muteBtn.textContent = tts.muted ? '🔈' : '🔊';
+        if('speechSynthesis' in window){
+          loadVoices();
+          // Some browsers (esp. Safari/iOS) populate voices asynchronously
+          window.speechSynthesis.onvoiceschanged = loadVoices;
+        } else {
+          document.getElementById('ttsSupportNote').innerHTML = 'Your browser does not support Text‑to‑Speech.';
+        }
+      }catch(e){}
+    })();
+
     function startSentenceCycle(){
       if(i>=sentences.length){
         // Finished all
@@ -181,10 +268,14 @@
       updateIndex();
       phase = 'show';
       stage.textContent = sentences[i];
+      // Speak at the start of show phase
+      stopSpeak();
+      speak(sentences[i]);
       nextBtn.disabled = true; // only enabled in 'write' and 'again'
       startTimer(5000, 'Show', 'show', ()=>{
         phase = 'blank';
         stage.textContent = '';
+        stopSpeak();
         startTimer(3000, 'Blank', 'blank', ()=>{
           phase = 'write';
           stage.innerHTML = `<div class="write">WRITE</div>`;
@@ -202,14 +293,15 @@
         stage.textContent = sentences[i];
         setCountdownLabel('Repeat shown', 'idle');
         animateBar(0);
-        // Keep Next enabled to go to the next sentence on next click
+        stopSpeak();
+        speak(sentences[i]);
         nextBtn.disabled = false;
       } else if(phase === 'again'){
         // Move to next sentence
         i++;
+        stopSpeak();
         startSentenceCycle();
       } else if(phase === 'idle' && i<sentences.length){
-        // Safety: restart cycle for current sentence
         startSentenceCycle();
       }
     }
@@ -242,11 +334,13 @@
 
     restartBtn.addEventListener('click', ()=>{
       clearInterval(timer);
+      stopSpeak();
       startSentenceCycle();
     });
 
     backBtn.addEventListener('click', ()=>{
       clearInterval(timer);
+      stopSpeak();
       viewer.style.display='none'; setup.style.display='block';
       nextBtn.disabled = true; stage.textContent=''; animateBar(0);
     });
@@ -262,11 +356,57 @@
       }
     });
 
+    // TTS control listeners
+    ttsEnabled.addEventListener('change', ()=>{
+      tts.enabled = ttsEnabled.checked;
+      setTTSControlsEnabled(tts.enabled);
+      localStorage.setItem('sentence-trainer:tts', tts.enabled ? '1' : '0');
+      if(!tts.enabled) stopSpeak();
+    });
+    voiceSelect.addEventListener('change', ()=>{
+      const name = voiceSelect.value;
+      const list = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+      tts.voice = list.find(v=>v.name===name)||null;
+      localStorage.setItem('sentence-trainer:voice', name||'');
+    });
+    rateInput.addEventListener('input', ()=>{
+      tts.rate = parseFloat(rateInput.value)||1; localStorage.setItem('sentence-trainer:rate', String(tts.rate));
+    });
+    pitchInput.addEventListener('input', ()=>{
+      tts.pitch = parseFloat(pitchInput.value)||1; localStorage.setItem('sentence-trainer:pitch', String(tts.pitch));
+    });
+    testVoiceBtn.addEventListener('click', ()=>{
+      stopSpeak(); speak('This is a test of the selected voice.');
+    });
+    muteBtn.addEventListener('click', ()=>{
+      tts.muted = !tts.muted; localStorage.setItem('sentence-trainer:muted', tts.muted ? '1' : '0');
+      muteBtn.textContent = tts.muted ? '🔈' : '🔊';
+      if(tts.muted) stopSpeak();
+    });
+
     // Load last session if available
     try{
       const last = JSON.parse(localStorage.getItem('sentence-trainer:last')||'null');
       if(Array.isArray(last) && last.length){ input.value = last.join('\n'); }
     }catch(e){}
+
+    // ---------------- Self-tests ----------------
+    (function selfTests(){
+      const cases = [
+        {name:'LF only', input:'A\nB\n\n C ', expected:['A','B','C']},
+        {name:'CRLF',    input:'A\r\nB\r\n\r\nC', expected:['A','B','C']},
+        {name:'CR only', input:'A\rB\r\rC', expected:['A','B','C']},
+        {name:'Spaces',  input:'  A  \n  \n B ', expected:['A','B']}
+      ];
+      let pass = 0;
+      for(const t of cases){
+        const out = parseSentences(t.input);
+        const ok = JSON.stringify(out)===JSON.stringify(t.expected);
+        console[ok?'log':'error'](`[parseSentences] ${ok?'PASS':'FAIL'} - ${t.name}`, {out, expected:t.expected});
+        if(ok) pass++;
+      }
+      console[pass===cases.length?'log':'error'](`[parseSentences] ${pass}/${cases.length} tests passed`);
+    })();
   </script>
 </body>
 </html>
