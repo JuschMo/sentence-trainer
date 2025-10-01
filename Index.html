@@ -6,15 +6,8 @@
   <title>Sentence Trainer</title>
   <style>
     :root{
-      --bg:#0f172a;        /* slate-900 */
-      --fg:#e2e8f0;        /* slate-200 */
-      --muted:#94a3b8;     /* slate-400 */
-      --accent:#22d3ee;    /* cyan-400 */
-      --good:#34d399;      /* emerald-400 */
-      --warn:#fbbf24;      /* amber-400 */
-      --danger:#fb7185;    /* rose-400 */
-      --card:#111827;      /* gray-900 */
-      --btn:#1f2937;       /* gray-800 */
+      --bg:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; --accent:#22d3ee;
+      --good:#34d399; --warn:#fbbf24; --danger:#fb7185; --card:#111827; --btn:#1f2937;
     }
     html,body{height:100%}
     body{
@@ -22,13 +15,13 @@
       background: radial-gradient(1200px 800px at 70% -20%, #1e293b, transparent), var(--bg);
       color:var(--fg); display:grid; place-items:center;
     }
-    .app{ width: min(1100px, 92vw); }
-    .card{ background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.08);
-           border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
+    .app{ width: min(1200px, 94vw); }
+    .card{ background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+           border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,0.35); }
     h1{ margin:0 0 12px; font-weight:800; letter-spacing:0.2px; }
     p.muted{ color:var(--muted); margin-top:6px }
-    textarea{ width:100%; min-height:260px; border-radius:12px; background:#0b1220; color:var(--fg); border:1px solid rgba(255,255,255,0.12);
-              padding:14px; font-size:18px; line-height:1.5; resize:vertical; }
+    textarea{ width:100%; min-height:240px; border-radius:12px; background:#0b1220; color:var(--fg);
+              border:1px solid rgba(255,255,255,0.12); padding:14px; font-size:18px; line-height:1.5; resize:vertical; }
     .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
     .btn{ background:var(--btn); color:#fff; border:1px solid rgba(255,255,255,0.14); padding:12px 16px; border-radius:12px; font-size:16px;
           cursor:pointer; transition: transform .06s ease, background .2s ease, border-color .2s ease; }
@@ -44,19 +37,19 @@
     .hud{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px }
     .count{ font-variant-numeric:tabular-nums; letter-spacing:1px; font-weight:800; }
     .count.badge{ background:#0b1220; border:1px solid rgba(255,255,255,0.12); padding:8px 12px; border-radius:999px }
-    .count.show{ color:var(--good) }
-    .count.blank{ color:var(--warn) }
-    .count.idle{ color:var(--muted) }
+    .count.show{ color:var(--good) } .count.blank{ color:var(--warn) } .count.idle{ color:var(--muted) }
     .progress{ height:6px; background:#0b1220; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.08) }
     .progress > div{ height:100%; width:0%; background: linear-gradient(90deg, #22d3ee, #34d399); transition: width .1s linear }
 
-    .sentence{ font-size: clamp(28px, 5vw, 54px); line-height:1.2; text-align:center; min-height: 6lh; display:grid; place-items:center; padding: 28px; border-radius:18px; border:1px solid rgba(255,255,255,.08);
+    .sentence{ font-size: clamp(28px, 5vw, 54px); line-height:1.2; text-align:center; min-height: 6lh; display:grid; place-items:center;
+               padding: 28px; border-radius:18px; border:1px solid rgba(255,255,255,.08);
                background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); }
     .write{ font-weight:900; letter-spacing: 2px; font-size: clamp(34px, 6vw, 72px); color:var(--accent); text-align:center }
 
     .footer{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:12px; flex-wrap:wrap }
     .index{ color:var(--muted) }
     .kbd{ font-variant-numeric: tabular-nums; background:#0b1220; border:1px solid rgba(255,255,255,.15); padding:2px 6px; border-radius:6px }
+    .pill{ padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.15); background:#0b1220; color:#e2e8f0; font-size:12px }
 
     @media (max-width:600px){ .sentence{ min-height: 5lh } }
   </style>
@@ -66,32 +59,43 @@
     <!-- Setup screen -->
     <section id="setup" class="card">
       <h1>Sentence Trainer</h1>
-      <p class="muted">Paste or type one sentence per line. Click <strong>OK</strong> to start. On each slide: the sentence shows for <strong>5s</strong> with a countdown, hides for <strong>3s</strong> (countdown), then shows <em>Write</em>. Use <span class="kbd">Space</span> or the <strong>Next</strong> button to proceed.</p>
+      <p class="muted">Paste or type one sentence per line. Click <strong>OK</strong> to start. On each slide: the sentence shows for <strong>show</strong> seconds, hides for <strong>blank</strong> seconds, shows <em>Write</em>, then you can reveal it again and move on. Use <span class="kbd">Space</span> for Next.</p>
       <textarea id="input" placeholder="Type one sentence per line…&#10;Ich spiele gern Fußball.&#10;Am Wochenende besuche ich meine Großeltern.&#10;…"></textarea>
-      <div class="row" style="margin-top:12px">
-        <button id="startBtn" class="btn primary">OK</button>
-        <button id="demoBtn" class="btn">Load demo</button>
-        <button id="clearBtn" class="btn ghost">Clear</button>
-        <div class="chips" aria-hidden="true">
-          <span class="chip">5s show</span>
-          <span class="chip">3s blank</span>
-          <span class="chip">then <strong>Write</strong></span>
+
+      <!-- Difficulty presets -->
+      <div class="card" style="margin-top:14px">
+        <h2 style="margin:0 0 8px;font-size:18px">Difficulty / Timers</h2>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" data-preset="beginner">Beginner 8s/5s</button>
+          <button class="btn" data-preset="standard">Standard 5s/3s</button>
+          <button class="btn" data-preset="advanced">Advanced 3s/2s</button>
+          <span class="pill" id="currentPreset">Current: Standard</span>
+        </div>
+        <div class="row">
+          <label>Show <input id="showSec" type="number" min="1" max="30" value="5" style="width:80px"> s</label>
+          <label>Blank <input id="blankSec" type="number" min="1" max="30" value="3" style="width:80px"> s</label>
+          <button id="saveTiming" class="btn">Save timing</button>
         </div>
       </div>
 
       <div class="card" style="margin-top:14px">
-        <h2 style="margin:0 0 8px;font-size:18px">Text‑to‑Speech (optional)</h2>
+        <h2 style="margin:0 0 8px;font-size:18px">Text-to-Speech (optional)</h2>
         <p class="muted" id="ttsSupportNote">Enable this to have each sentence read aloud during the <em>Show</em> phase and when it reappears.</p>
         <div class="row" id="ttsControls">
           <label class="row" style="gap:8px;align-items:center">
-            <input type="checkbox" id="ttsEnabled"/>
-            <span>Read sentences aloud</span>
+            <input type="checkbox" id="ttsEnabled"/><span>Read sentences aloud</span>
           </label>
           <select id="voiceSelect" title="Voice" disabled></select>
           <label>Rate <input type="range" id="rate" min="0.5" max="1.5" step="0.1" value="1" disabled></label>
           <label>Pitch <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1" disabled></label>
           <button id="testVoice" class="btn" disabled>Test voice</button>
         </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="startBtn" class="btn primary">OK</button>
+        <button id="demoBtn" class="btn">Load demo</button>
+        <button id="clearBtn" class="btn ghost">Clear</button>
       </div>
     </section>
 
@@ -100,6 +104,7 @@
       <div class="hud">
         <div class="index" id="indexLabel">Sentence 1 / 1</div>
         <div class="row" style="margin-left:auto;gap:8px;align-items:center">
+          <span class="pill" id="scorePill">Score: 0/0</span>
           <button id="muteBtn" class="btn" title="Mute / unmute TTS">🔊</button>
           <div class="count badge idle" id="countdown">Ready</div>
         </div>
@@ -108,19 +113,28 @@
 
       <div id="stage" class="sentence" role="region" aria-live="polite"></div>
 
+      <!-- Write/check UI -->
+      <div id="writePanel" class="card" style="display:none; margin-top:12px">
+        <div class="row" style="width:100%">
+          <input id="answer" type="text" placeholder="Type exactly what you saw…" style="flex:1; min-width:200px; padding:10px; border-radius:10px; background:#0b1220; color:var(--fg); border:1px solid rgba(255,255,255,.15)" />
+          <button id="checkBtn" class="btn">Check</button>
+        </div>
+        <div id="feedback" class="muted" style="margin-top:8px"></div>
+      </div>
+
       <div class="footer">
         <div class="row">
           <button id="nextBtn" class="btn" disabled>Next ▸</button>
           <button id="restartBtn" class="btn">↻ Restart</button>
           <button id="backBtn" class="btn">◂ Back to input</button>
         </div>
-        <div class="muted">Tip: press <span class="kbd">Space</span> for Next</div>
+        <div class="muted">Tips: <span class="kbd">Space</span> for Next · <span class="kbd">Enter</span> to Check</div>
       </div>
     </section>
   </div>
 
   <script>
-    // Simple single-file SPA
+    // ========== State ==========
     const setup = document.getElementById('setup');
     const viewer = document.getElementById('viewer');
     const input = document.getElementById('input');
@@ -136,14 +150,27 @@
     const restartBtn = document.getElementById('restartBtn');
     const backBtn = document.getElementById('backBtn');
     const muteBtn = document.getElementById('muteBtn');
+    const scorePill = document.getElementById('scorePill');
+
+    // Write/check UI
+    const writePanel = document.getElementById('writePanel');
+    const answer = document.getElementById('answer');
+    const checkBtn = document.getElementById('checkBtn');
+    const feedback = document.getElementById('feedback');
+
+    // Difficulty controls
+    const showSec = document.getElementById('showSec');
+    const blankSec = document.getElementById('blankSec');
+    const currentPreset = document.getElementById('currentPreset');
+    const saveTiming = document.getElementById('saveTiming');
 
     let sentences = [];
-    let i = 0;                 // current sentence index
-    let phase = 'idle';        // 'show'|'blank'|'write'|'again'|'idle'
-    let timer = null;          // interval id
-    let t0 = 0, dur = 0;       // timing
+    let i = 0, phase = 'idle', timer = null, t0 = 0;
+    let showMs = 5000, blankMs = 3000;
+    let scoreCorrect = 0, scoreTotal = 0;
+    let lastChecked = false, lastResult = null;
 
-    // === TTS state ===
+    // TTS
     const ttsEnabled = document.getElementById('ttsEnabled');
     const voiceSelect = document.getElementById('voiceSelect');
     const rateInput = document.getElementById('rate');
@@ -151,261 +178,228 @@
     const testVoiceBtn = document.getElementById('testVoice');
     const tts = { enabled:false, muted:false, voice:null, rate:1, pitch:1, volume:1 };
 
+    // ========== Helpers ==========
     function parseSentences(text){
-      // Robustly split on Windows (\r\n), Unix (\n), or classic Mac (\r) newlines
-      return text
-        .split(/\r?\n|\r/)
-        .map(s => s.trim())
-        .filter(Boolean);
+      return text.split(/\r?\n|\r/).map(s=>s.trim()).filter(Boolean);
     }
+    function updateScore(){ scorePill.textContent = `Score: ${scoreCorrect}/${scoreTotal}`; }
+    function updateIndex(){ indexLabel.textContent = `Sentence ${i+1} / ${sentences.length}`; }
+    function setCountdownLabel(txt, cls){ countdown.textContent = txt; countdown.className = `count badge ${cls}`; }
+    function animateBar(p){ bar.style.width = `${Math.max(0, Math.min(100, p*100))}%`; }
 
-    function gotoViewer(list){
-      sentences = list;
-      i = 0;
-      setup.style.display = 'none';
-      viewer.style.display = 'block';
-      startSentenceCycle();
-    }
-
-    function updateIndex(){
-      indexLabel.textContent = `Sentence ${i+1} / ${sentences.length}`;
-    }
-
-    function setCountdownLabel(txt, cls){
-      countdown.textContent = txt;
-      countdown.className = `count badge ${cls}`;
-    }
-
-    function animateBar(progress){
-      bar.style.width = `${Math.max(0, Math.min(100, progress*100))}%`;
-    }
-
-    function startTimer(ms, tickLabel, cls, onDone){
-      clearInterval(timer);
-      t0 = performance.now();
-      dur = ms;
-      animateBar(0);
+    function startTimer(ms, label, cls, done){
+      clearInterval(timer); t0 = performance.now(); animateBar(0);
       timer = setInterval(()=>{
-        const now = performance.now();
-        const elapsed = now - t0;
-        const remain = Math.max(0, ms - elapsed);
-        const s = Math.ceil(remain/1000);
-        setCountdownLabel(`${tickLabel}: ${s}s`, cls);
-        animateBar(elapsed / ms);
-        if(remain <= 0){
-          clearInterval(timer);
-          animateBar(1);
-          onDone && onDone();
-        }
-      }, 100);
+        const el = performance.now() - t0;
+        const remain = Math.max(0, ms - el);
+        setCountdownLabel(`${label}: ${Math.ceil(remain/1000)}s`, cls);
+        animateBar(el/ms);
+        if(remain<=0){ clearInterval(timer); animateBar(1); done && done(); }
+      },100);
     }
 
-    // ---------- TTS helpers ----------
+    // ---- TTS
     function loadVoices(){
       if(!('speechSynthesis' in window)) return;
       const voices = window.speechSynthesis.getVoices();
       voiceSelect.innerHTML = '';
       for(const v of voices){
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        opt.textContent = `${v.name} (${v.lang})`;
-        voiceSelect.appendChild(opt);
+        const o = document.createElement('option');
+        o.value=v.name; o.textContent=`${v.name} (${v.lang})`;
+        voiceSelect.appendChild(o);
       }
-      const savedName = localStorage.getItem('sentence-trainer:voice');
-      if(savedName){
-        const found = Array.from(voiceSelect.options).find(o=>o.value===savedName);
-        if(found){ voiceSelect.value = savedName; tts.voice = voices.find(v=>v.name===savedName)||null; }
-      } else if(voices.length){
-        const preferred = voices.find(v=>/^en|^de/i.test(v.lang)) || voices[0];
-        tts.voice = preferred; voiceSelect.value = preferred?.name || '';
+      const saved = localStorage.getItem('sentence-trainer:voice');
+      if(saved){
+        voiceSelect.value = saved;
+        tts.voice = voices.find(v=>v.name===saved)||null;
+      }else if(voices.length){
+        const pref = voices.find(v=>/^de|^en/i.test(v.lang)) || voices[0];
+        tts.voice = pref; voiceSelect.value = pref?.name || '';
       }
     }
-
     function setTTSControlsEnabled(on){
-      voiceSelect.disabled = !on; rateInput.disabled = !on; pitchInput.disabled = !on; testVoiceBtn.disabled = !on; muteBtn.disabled = !on;
+      voiceSelect.disabled = !on; rateInput.disabled=!on; pitchInput.disabled=!on; testVoiceBtn.disabled=!on; muteBtn.disabled=!on;
     }
-
     function speak(text){
       if(!tts.enabled || tts.muted || !('speechSynthesis' in window)) return;
       try{ window.speechSynthesis.cancel(); }catch(e){}
       const u = new SpeechSynthesisUtterance(text);
       if(tts.voice) u.voice = tts.voice;
-      u.rate = tts.rate; u.pitch = tts.pitch; u.volume = tts.volume;
+      u.rate=tts.rate; u.pitch=tts.pitch; u.volume=tts.volume;
       window.speechSynthesis.speak(u);
     }
-
     function stopSpeak(){ if('speechSynthesis' in window) try{ window.speechSynthesis.cancel(); }catch(e){} }
 
-    // Restore TTS settings on load
-    (function initTTS(){
-      try{
-        tts.enabled = localStorage.getItem('sentence-trainer:tts') === '1';
-        tts.rate = parseFloat(localStorage.getItem('sentence-trainer:rate')||'1')||1;
-        tts.pitch = parseFloat(localStorage.getItem('sentence-trainer:pitch')||'1')||1;
-        tts.muted = localStorage.getItem('sentence-trainer:muted') === '1';
-        ttsEnabled.checked = tts.enabled; rateInput.value = tts.rate; pitchInput.value = tts.pitch;
-        setTTSControlsEnabled(tts.enabled);
-        muteBtn.textContent = tts.muted ? '🔈' : '🔊';
-        if('speechSynthesis' in window){
-          loadVoices();
-          // Some browsers (esp. Safari/iOS) populate voices asynchronously
-          window.speechSynthesis.onvoiceschanged = loadVoices;
-        } else {
-          document.getElementById('ttsSupportNote').innerHTML = 'Your browser does not support Text‑to‑Speech.';
+    // ---- Normalize + fuzzy match (German-friendly)
+    function normalizeGerman(s){
+      if(!s) return '';
+      const map = { 'ä':'ae','ö':'oe','ü':'ue','ß':'ss' };
+      s = s.toLowerCase();
+      s = s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');      // strip accents
+      s = s.replace(/[äöüß]/g, ch => map[ch] || ch);              // expand umlauts
+      s = s.replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();// drop punctuation
+      return s;
+    }
+    function levenshtein(a,b){
+      const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+      const dp=new Uint16Array(n+1); for(let j=0;j<=n;j++) dp[j]=j;
+      for(let i1=1;i1<=m;i1++){
+        let prev=dp[0]; dp[0]=i1;
+        for(let j=1;j<=n;j++){
+          const tmp=dp[j], cost=(a.charCodeAt(i1-1)===b.charCodeAt(j-1))?0:1;
+          dp[j]=Math.min(dp[j]+1, dp[j-1]+1, prev+cost);
+          prev=tmp;
         }
-      }catch(e){}
-    })();
+      } return dp[n];
+    }
+    function isCorrect(user, target){
+      const u=normalizeGerman(user), t=normalizeGerman(target);
+      const limit = Math.max(1, Math.round(t.length*0.1)); // ~10% edits allowed
+      const d = levenshtein(u,t);
+      return {ok:d<=limit, dist:d, limit, u, t};
+    }
+
+    // ========== Flow ==========
+    function gotoViewer(list){
+      sentences=list; i=0; scoreCorrect=0; scoreTotal=sentences.length; updateScore();
+      setup.style.display='none'; viewer.style.display='block'; startSentenceCycle();
+    }
+    function showWriteUI(){
+      writePanel.style.display='block'; answer.value=''; feedback.textContent='Type the sentence you saw, then press Enter or Check.'; answer.focus();
+      nextBtn.disabled=true; lastChecked=false; lastResult=null; delete stage.dataset.scored;
+    }
+    function hideWriteUI(){ writePanel.style.display='none'; }
 
     function startSentenceCycle(){
       if(i>=sentences.length){
-        // Finished all
         stage.innerHTML = `<div class="write">All done ✅</div>`;
-        setCountdownLabel('Complete', 'idle');
-        nextBtn.disabled = true;
-        animateBar(0);
-        return;
+        setCountdownLabel('Complete','idle');
+        nextBtn.disabled=true; animateBar(0); hideWriteUI(); stopSpeak(); return;
       }
       updateIndex();
-      phase = 'show';
+      // Show
       stage.textContent = sentences[i];
-      // Speak at the start of show phase
-      stopSpeak();
-      speak(sentences[i]);
-      nextBtn.disabled = true; // only enabled in 'write' and 'again'
-      startTimer(5000, 'Show', 'show', ()=>{
-        phase = 'blank';
-        stage.textContent = '';
-        stopSpeak();
-        startTimer(3000, 'Blank', 'blank', ()=>{
-          phase = 'write';
+      hideWriteUI(); stopSpeak(); speak(sentences[i]); nextBtn.disabled=true;
+      startTimer(showMs,'Show','show',()=>{
+        // Blank
+        stage.textContent=''; stopSpeak();
+        startTimer(blankMs,'Blank','blank',()=>{
+          // Write
           stage.innerHTML = `<div class="write">WRITE</div>`;
-          setCountdownLabel('Wait for Next', 'idle');
-          animateBar(0);
-          nextBtn.disabled = false; // allow progressing
+          setCountdownLabel('Type your answer','idle'); animateBar(0);
+          showWriteUI();
         });
       });
     }
 
     function handleNext(){
-      if(phase === 'write'){
-        // Show the same sentence again (no timer)
-        phase = 'again';
-        stage.textContent = sentences[i];
-        setCountdownLabel('Repeat shown', 'idle');
-        animateBar(0);
-        stopSpeak();
-        speak(sentences[i]);
-        nextBtn.disabled = false;
-      } else if(phase === 'again'){
-        // Move to next sentence
-        i++;
-        stopSpeak();
-        startSentenceCycle();
-      } else if(phase === 'idle' && i<sentences.length){
-        startSentenceCycle();
+      if(phase==='write'){
+        if(!lastChecked){ feedback.textContent='Please press Check first.'; return; }
+        phase='again'; hideWriteUI(); stage.textContent=sentences[i];
+        setCountdownLabel('Repeat shown','idle'); animateBar(0); stopSpeak(); speak(sentences[i]);
+        nextBtn.disabled=false;
+      }else if(phase==='again'){
+        i++; startSentenceCycle();
       }
     }
 
-    // Controls
+    // ========== Events ==========
     startBtn.addEventListener('click', ()=>{
       const list = parseSentences(input.value);
-      if(list.length===0){
-        alert('Please add at least one sentence.');
-        return;
-      }
-      // Persist to localStorage for convenience
+      if(!list.length){ alert('Please add at least one sentence.'); return; }
       try{ localStorage.setItem('sentence-trainer:last', JSON.stringify(list)); }catch(e){}
       gotoViewer(list);
     });
-
     demoBtn.addEventListener('click', ()=>{
-      const demo = [
+      input.value = [
         'Ich mag Mathe, weil es logisch ist.',
         'Am Montag habe ich Deutsch.',
         'Wir spielen Fußball nach der Schule.',
         'Im Sommer fahre ich nach Spanien.'
-      ];
-      input.value = demo.join('\n');
+      ].join('\n');
     });
-
     clearBtn.addEventListener('click', ()=>{ input.value=''; input.focus(); });
 
     nextBtn.addEventListener('click', handleNext);
+    restartBtn.addEventListener('click', ()=>{ clearInterval(timer); stopSpeak(); startSentenceCycle(); });
+    backBtn.addEventListener('click', ()=>{ clearInterval(timer); stopSpeak(); viewer.style.display='none'; setup.style.display='block'; nextBtn.disabled=true; stage.textContent=''; animateBar(0); });
 
-    restartBtn.addEventListener('click', ()=>{
-      clearInterval(timer);
-      stopSpeak();
-      startSentenceCycle();
-    });
-
-    backBtn.addEventListener('click', ()=>{
-      clearInterval(timer);
-      stopSpeak();
-      viewer.style.display='none'; setup.style.display='block';
-      nextBtn.disabled = true; stage.textContent=''; animateBar(0);
-    });
-
-    // Keyboard shortcuts
     window.addEventListener('keydown', (e)=>{
-      // Space for Next (but not when typing in textarea)
-      if(e.code === 'Space'){
-        const active = document.activeElement;
-        if(active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) return; 
-        e.preventDefault();
-        if(viewer.style.display === 'block' && !nextBtn.disabled){ handleNext(); }
+      if(e.code==='Space'){
+        const a=document.activeElement;
+        if(a && (a.tagName==='TEXTAREA'||a.tagName==='INPUT')) return;
+        e.preventDefault(); if(viewer.style.display==='block' && !nextBtn.disabled) handleNext();
       }
+      if(e.key==='Enter' && writePanel.style.display==='block'){ e.preventDefault(); checkBtn.click(); }
     });
 
-    // TTS control listeners
-    ttsEnabled.addEventListener('change', ()=>{
-      tts.enabled = ttsEnabled.checked;
-      setTTSControlsEnabled(tts.enabled);
-      localStorage.setItem('sentence-trainer:tts', tts.enabled ? '1' : '0');
-      if(!tts.enabled) stopSpeak();
-    });
-    voiceSelect.addEventListener('change', ()=>{
-      const name = voiceSelect.value;
-      const list = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
-      tts.voice = list.find(v=>v.name===name)||null;
-      localStorage.setItem('sentence-trainer:voice', name||'');
-    });
-    rateInput.addEventListener('input', ()=>{
-      tts.rate = parseFloat(rateInput.value)||1; localStorage.setItem('sentence-trainer:rate', String(tts.rate));
-    });
-    pitchInput.addEventListener('input', ()=>{
-      tts.pitch = parseFloat(pitchInput.value)||1; localStorage.setItem('sentence-trainer:pitch', String(tts.pitch));
-    });
-    testVoiceBtn.addEventListener('click', ()=>{
-      stopSpeak(); speak('This is a test of the selected voice.');
-    });
-    muteBtn.addEventListener('click', ()=>{
-      tts.muted = !tts.muted; localStorage.setItem('sentence-trainer:muted', tts.muted ? '1' : '0');
-      muteBtn.textContent = tts.muted ? '🔈' : '🔊';
-      if(tts.muted) stopSpeak();
+    // Check logic
+    checkBtn.addEventListener('click', ()=>{
+      const res = isCorrect(answer.value, sentences[i]);
+      lastChecked=true; lastResult=res.ok;
+      if(res.ok){
+        feedback.innerHTML = `✅ Correct (distance ${res.dist} ≤ allowed ${res.limit})`;
+        if(!stage.dataset.scored){ scoreCorrect++; updateScore(); stage.dataset.scored='1'; }
+      }else{
+        feedback.innerHTML = `❌ Not quite. Allowed edits: ${res.limit}. Your distance: ${res.dist}.`;
+      }
+      nextBtn.disabled=false;
     });
 
-    // Load last session if available
-    try{
-      const last = JSON.parse(localStorage.getItem('sentence-trainer:last')||'null');
-      if(Array.isArray(last) && last.length){ input.value = last.join('\n'); }
-    }catch(e){}
+    // Difficulty presets
+    function applyPreset(name){
+      let s=5,b=3,label='Standard';
+      if(name==='beginner'){ s=8; b=5; label='Beginner'; }
+      if(name==='advanced'){ s=3; b=2; label='Advanced'; }
+      showSec.value=s; blankSec.value=b; currentPreset.textContent=`Current: ${label}`;
+      persistTiming(); loadTiming();
+    }
+    document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.preset)));
+    function persistTiming(){ localStorage.setItem('sentence-trainer:show', showSec.value); localStorage.setItem('sentence-trainer:blank', blankSec.value); }
+    function loadTiming(){
+      const s=parseInt(localStorage.getItem('sentence-trainer:show')||showSec.value,10);
+      const b=parseInt(localStorage.getItem('sentence-trainer:blank')||blankSec.value,10);
+      showMs=Math.max(1,s)*1000; blankMs=Math.max(1,b)*1000;
+    }
+    saveTiming.addEventListener('click', ()=>{ persistTiming(); loadTiming(); currentPreset.textContent='Current: Custom'; });
 
-    // ---------------- Self-tests ----------------
+    // TTS toggles
+    function setTTSControlsEnabled(on){ voiceSelect.disabled=!on; rateInput.disabled=!on; pitchInput.disabled=!on; testVoiceBtn.disabled=!on; muteBtn.disabled=!on; }
+    ttsEnabled.addEventListener('change', ()=>{ tts.enabled=ttsEnabled.checked; setTTSControlsEnabled(tts.enabled); localStorage.setItem('sentence-trainer:tts', tts.enabled?'1':'0'); if(!tts.enabled) stopSpeak(); });
+    voiceSelect.addEventListener('change', ()=>{ const name=voiceSelect.value; const list=(window.speechSynthesis&&window.speechSynthesis.getVoices())||[]; tts.voice=list.find(v=>v.name===name)||null; localStorage.setItem('sentence-trainer:voice', name||''); });
+    rateInput.addEventListener('input', ()=>{ tts.rate=parseFloat(rateInput.value)||1; localStorage.setItem('sentence-trainer:rate', String(tts.rate)); });
+    pitchInput.addEventListener('input', ()=>{ tts.pitch=parseFloat(pitchInput.value)||1; localStorage.setItem('sentence-trainer:pitch', String(tts.pitch)); });
+    testVoiceBtn.addEventListener('click', ()=>{ stopSpeak(); speak('This is a test of the selected voice.'); });
+    muteBtn.addEventListener('click', ()=>{ tts.muted=!tts.muted; localStorage.setItem('sentence-trainer:muted', tts.muted?'1':'0'); muteBtn.textContent=tts.muted?'🔈':'🔊'; if(tts.muted) stopSpeak(); });
+
+    // Init
+    (function init(){
+      try{
+        const last = JSON.parse(localStorage.getItem('sentence-trainer:last')||'null');
+        if(Array.isArray(last) && last.length) input.value = last.join('\n');
+        tts.enabled = localStorage.getItem('sentence-trainer:tts')==='1';
+        tts.rate = parseFloat(localStorage.getItem('sentence-trainer:rate')||'1')||1;
+        tts.pitch = parseFloat(localStorage.getItem('sentence-trainer:pitch')||'1')||1;
+        tts.muted = localStorage.getItem('sentence-trainer:muted')==='1';
+        ttsEnabled.checked = tts.enabled; rateInput.value=tts.rate; pitchInput.value=tts.pitch;
+        setTTSControlsEnabled(tts.enabled); muteBtn.textContent=tts.muted?'🔈':'🔊';
+        if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.onvoiceschanged=loadVoices; }
+        else { document.getElementById('ttsSupportNote').innerHTML='Your browser does not support Text-to-Speech.'; }
+        loadTiming();
+      }catch(e){}
+    })();
+
+    // ---- Minimal self-tests in console
     (function selfTests(){
       const cases = [
-        {name:'LF only', input:'A\nB\n\n C ', expected:['A','B','C']},
-        {name:'CRLF',    input:'A\r\nB\r\n\r\nC', expected:['A','B','C']},
-        {name:'CR only', input:'A\rB\r\rC', expected:['A','B','C']},
-        {name:'Spaces',  input:'  A  \n  \n B ', expected:['A','B']}
+        {name:'LF only',  input:'A\nB\n\n C ', expected:['A','B','C']},
+        {name:'CRLF',     input:'A\r\nB\r\n\r\nC', expected:['A','B','C']},
+        {name:'CR only',  input:'A\rB\r\rC', expected:['A','B','C']},
+        {name:'Spaces',   input:'  A  \n  \n B ', expected:['A','B']}
       ];
-      let pass = 0;
-      for(const t of cases){
-        const out = parseSentences(t.input);
-        const ok = JSON.stringify(out)===JSON.stringify(t.expected);
-        console[ok?'log':'error'](`[parseSentences] ${ok?'PASS':'FAIL'} - ${t.name}`, {out, expected:t.expected});
-        if(ok) pass++;
-      }
-      console[pass===cases.length?'log':'error'](`[parseSentences] ${pass}/${cases.length} tests passed`);
+      let pass=0; for(const t of cases){ const out=parseSentences(t.input); const ok=JSON.stringify(out)===JSON.stringify(t.expected); console[ok?'log':'error'](`[parse] ${t.name}: ${ok?'PASS':'FAIL'}`, out); if(ok) pass++; }
+      console.log(`[tests] ${pass}/${cases.length} passed`);
+      console.log('[fuzzy example]', (function(){return (function(a,b){const u=normalizeGerman(a),t=normalizeGerman(b);const d=levenshtein(u,t);return {u,t,d};})('Ich mag Mathe weil es logisch ist','Ich mag Mathe, weil es logisch ist.');})());
     })();
   </script>
 </body>
